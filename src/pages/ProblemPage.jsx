@@ -35,47 +35,41 @@ const ProblemPage = () => {
     const fetchProblem = async () => {
       setLoadingProblem(true);
       try {
-        const res = await axiosClient.get(`/problem/problemById/${problemId}`);
+        const res = await axiosClient.get(`/problem/${problemId}`);
         setProblem(res.data);
 
-        const initialCode = res.data.startCode.find(
+        // Get initial code for the selected language
+        const initialCode = res.data.startCode?.find(
           sc => sc.language === langMap[selectedLanguage]
         )?.initialCode || '';
 
         setCode(initialCode);
       } catch (err) {
-        console.error(err);
+        console.error("Fetch problem error:", err.response || err.message);
       } finally {
         setLoadingProblem(false);
       }
     };
 
     fetchProblem();
-  }, [problemId]);
-
-  /* -------- UPDATE CODE ON LANGUAGE CHANGE -------- */
-  useEffect(() => {
-    if (!problem) return;
-    const initialCode = problem.startCode.find(
-      sc => sc.language === langMap[selectedLanguage]
-    )?.initialCode || '';
-    setCode(initialCode);
-  }, [selectedLanguage, problem]);
+  }, [problemId, selectedLanguage]);
 
   /* ---------------- RUN CODE ---------------- */
   const handleRun = async () => {
+    if (!code) return;
     setRunning(true);
     setRunResult(null);
+
     try {
       const res = await axiosClient.post(`/submission/run/${problemId}`, {
         code,
         language: selectedLanguage
       });
-
       setRunResult(res.data);
       setActiveRightTab('testcase');
     } catch (err) {
-      setRunResult({ success: false, error: 'Run failed' });
+      console.error("Run code error:", err.response || err.message);
+      setRunResult({ success: false, error: "Run failed" });
       setActiveRightTab('testcase');
     } finally {
       setRunning(false);
@@ -83,35 +77,31 @@ const ProblemPage = () => {
   };
 
   /* ---------------- SUBMIT CODE ---------------- */
- const handleSubmitCode = async () => {
-  setSubmitting(true);
-  setSubmitResult(null);
+  const handleSubmitCode = async () => {
+    if (!code) return;
+    setSubmitting(true);
+    setSubmitResult(null);
 
-  try {
-    const res = await axiosClient.post(
-      `/submission/submit/${problemId}`,
-      {
+    try {
+      const res = await axiosClient.post(`/submission/submit/${problemId}`, {
         code,
         language: selectedLanguage
-      }
-    );
-
-    setSubmitResult(res.data); // ✅ accepted exists now
-    setActiveRightTab('result');
-
-  } catch (err) {
-    setSubmitResult({
-      accepted: false,
-      error: "Submission Failed",
-      passedTestCases: 0,
-      totalTestCases: 0
-    });
-    setActiveRightTab('result');
-  } finally {
-    setSubmitting(false);
-  }
-};
-
+      });
+      setSubmitResult(res.data);
+      setActiveRightTab('result');
+    } catch (err) {
+      console.error("Submit code error:", err.response || err.message);
+      setSubmitResult({
+        accepted: false,
+        error: "Submission Failed",
+        passedTestCases: 0,
+        totalTestCases: problem?.hiddenTestCases?.length || 0
+      });
+      setActiveRightTab('result');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const getLanguageForMonaco = () => {
     if (selectedLanguage === 'cpp') return 'cpp';
@@ -153,52 +143,30 @@ const ProblemPage = () => {
           )}
 
           {activeLeftTab === 'editorial' && (
+            <VideoPlayer videoUrl={problem?.secureUrl} />
+          )}
+
+          {activeLeftTab === 'solutions' && (
             <>
-              <h2 className="text-xl font-bold">Editorial</h2>
-              <VideoPlayer videoUrl={problem?.secureUrl} />
+              {problem.referenceSolution?.map((sol, idx) => (
+                <div key={idx} className="border rounded mb-4">
+                  <div className="bg-base-200 p-2 font-semibold">{sol.language}</div>
+                  <pre className="p-4 bg-base-300 overflow-x-auto">
+                    {sol.completeCode}
+                  </pre>
+                </div>
+              )) || <p className="text-gray-500">Solutions will appear after solving the problem.</p>}
             </>
           )}
 
-         {activeLeftTab === 'solutions' && (
-  <div>
-    <h2 className="text-xl font-bold mb-4">Solutions</h2>
-    <div className="space-y-6">
-      {problem.referenceSolution?.map((solution, index) => (
-        <div key={index} className="border border-base-300 rounded-lg">
-          <div className="bg-base-200 px-4 py-2 rounded-t-lg">
-            <h3 className="font-semibold">
-              {problem?.title} - {solution?.language}
-            </h3>
-          </div>
-          <div className="p-4">
-            <pre className="bg-base-300 p-4 rounded text-sm overflow-x-auto">
-              <code>{solution?.completeCode}</code>
-            </pre>
-          </div>
-        </div>
-      )) || (
-        <p className="text-gray-500">
-          Solutions will be available after you solve the problem.
-        </p>
-      )}
-    </div>
-  </div>
-)}
+          {activeLeftTab === 'submissions' && <SubmissionHistory problemId={problemId} />}
 
-
-          {activeLeftTab === 'submissions' && (
-            <SubmissionHistory problemId={problemId} />
-          )}
-
-          {activeLeftTab === 'chatAI' && (
-            <ChatAi problem={problem} />
-          )}
+          {activeLeftTab === 'chatAI' && <ChatAi problem={problem} />}
         </div>
       </div>
 
       {/* RIGHT PANEL */}
       <div className="w-1/2 flex flex-col">
-      
         <div className="tabs tabs-bordered px-4">
           {['code', 'testcase', 'result'].map(tab => (
             <button
@@ -210,9 +178,7 @@ const ProblemPage = () => {
             </button>
           ))}
         </div>
-        
 
-        {/* CODE TAB */}
         {activeRightTab === 'code' && (
           <>
             <div className="p-4 flex gap-2">
@@ -247,118 +213,54 @@ const ProblemPage = () => {
           </>
         )}
 
+        {activeRightTab === 'testcase' && (
+          <div className="flex-1 p-4 overflow-y-auto">
+            <h3 className="font-semibold mb-4">Test Cases</h3>
 
-{/* TESTCASE TAB */}
-{activeRightTab === 'testcase' && (
-  <div className="flex-1 p-4 overflow-y-auto">
-    <h3 className="font-semibold mb-4">Test Cases</h3>
+            {problem?.visibleTestCases?.map((tc, idx) => (
+              <div key={idx} className="border rounded mb-4">
+                <div className="bg-base-200 p-2 font-semibold">Test Case {idx + 1}</div>
+                <div className="p-2">
+                  <p className="text-sm font-semibold">Input</p>
+                  <pre className="bg-base-300 p-2 rounded">{tc.input}</pre>
+                  <p className="text-sm font-semibold">Expected Output</p>
+                  <pre className="bg-base-300 p-2 rounded">{tc.output}</pre>
+                </div>
+              </div>
+            ))}
 
-    {/* Show Visible Test Cases */}
-    {problem?.visibleTestCases
-
-      ?.filter(tc => !tc.isHidden)
-      .map((tc, index) => (
-        <div
-          key={index}
-          className="border border-base-300 rounded-lg mb-4"
-        >
-          <div className="bg-base-200 px-4 py-2 font-semibold">
-            Test Case {index + 1}
-          </div>
-
-          <div className="p-4 space-y-2">
-            <div>
-              <p className="text-sm font-semibold">Input</p>
-              <pre className="bg-base-300 p-2 rounded">
-                {tc.input}
-              </pre>
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold">Expected Output</p>
-              <pre className="bg-base-300 p-2 rounded">
-                {tc.output}
-              </pre>
-            </div>
-          </div>
-        </div>
-      ))}
-
-    {/* Run Output */}
-    {runResult && (
-      <div className="mt-6">
-        <h4 className="font-semibold mb-2">Run Result</h4>
-
-        {runResult.success ? (
-          <div className="alert alert-success">
-            <div>
-              <p>✅ Code executed successfully</p>
-              <pre className="mt-2 bg-base-300 p-2 rounded">
-                {runResult.output}
-              </pre>
-            </div>
-          </div>
-        ) : (
-          <div className="alert alert-error">
-            <p>❌ {runResult.error}</p>
+            {runResult && (
+              <div className={`alert ${runResult.success ? 'alert-success' : 'alert-error'}`}>
+                <pre>{runResult.success ? runResult.output : runResult.error}</pre>
+              </div>
+            )}
           </div>
         )}
-      </div>
-    )}
-  </div>
-)}
 
-
-
-
-
-
-        {/* RESULT TAB */}
-     {activeRightTab === 'result' && (
-  <div className="flex-1 p-4 overflow-y-auto">
-    <h3 className="font-semibold mb-4">Submission Result</h3>
-
-    {submitResult ? (
-      <div
-        className={`alert ${
-          submitResult.accepted ? 'alert-success' : 'alert-error'
-        }`}
-      >
-        <div>
-          {submitResult.accepted ? (
-            <>
-              <h4 className="font-bold text-lg">🎉 Accepted</h4>
-              <p>
-                Test Cases Passed:
-                {submitResult.passedTestCases}/
-                {submitResult.totalTestCases}
-              </p>
-              <p>Runtime: {submitResult.runtime} sec</p>
-              <p>Memory: {submitResult.memory} KB</p>
-            </>
-          ) : (
-            <>
-              <h4 className="font-bold text-lg">
-                ❌ {submitResult.error || "Wrong Answer"}
-              </h4>
-              <p>
-                Test Cases Passed:
-                {submitResult.passedTestCases}/
-                {submitResult.totalTestCases}
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-    ) : (
-      <div className="text-gray-500">
-        Click \"Submit\" to submit your solution for evaluation.
-      </div>
-    )}
-  </div>
-)}
-
-
+        {activeRightTab === 'result' && (
+          <div className="flex-1 p-4 overflow-y-auto">
+            <h3 className="font-semibold mb-4">Submission Result</h3>
+            {submitResult ? (
+              <div className={`alert ${submitResult.accepted ? 'alert-success' : 'alert-error'}`}>
+                {submitResult.accepted ? (
+                  <>
+                    <h4 className="font-bold text-lg">🎉 Accepted</h4>
+                    <p>Test Cases Passed: {submitResult.passedTestCases}/{submitResult.totalTestCases}</p>
+                    <p>Runtime: {submitResult.runtime} sec</p>
+                    <p>Memory: {submitResult.memory} KB</p>
+                  </>
+                ) : (
+                  <>
+                    <h4 className="font-bold text-lg">❌ {submitResult.error || 'Wrong Answer'}</h4>
+                    <p>Test Cases Passed: {submitResult.passedTestCases}/{submitResult.totalTestCases}</p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500">Click "Submit" to submit your solution for evaluation.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
