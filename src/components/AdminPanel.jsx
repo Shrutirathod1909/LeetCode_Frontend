@@ -78,15 +78,24 @@ function AdminPanel() {
     name: 'hiddenTestCases'
   });
 
-  const onSubmit = async (data) => {
-    try {
-      await axiosClient.post('/problem/create', data);
-      alert('Problem created successfully!');
-      navigate('/');
-    } catch (error) {
-      alert(`Error: ${error.response?.data?.message || error.message}`);
-    }
-  };
+ const onSubmit = async (data) => {
+  try {
+    const res = await axiosClient.post(
+      "/problem/admin/create",
+      data
+    );
+
+    alert("Problem created successfully ✅");
+    navigate("/");
+
+  } catch (error) {
+    console.error(error);
+    alert(
+      error.response?.data?.message || "Problem create failed ❌"
+    );
+  }
+};
+
 
   return (
     <div className="container mx-auto p-6">
