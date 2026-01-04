@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom'; // use react-router-dom
+import { NavLink } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axiosClient from '../utils/axiosClient';
 import { logoutUserThunk } from '../authSlice';
@@ -17,21 +17,23 @@ function Homepage() {
     if (user) fetchSolvedProblems();
   }, [user]);
 
+  // Fetch all problems (public)
   const fetchProblems = async () => {
     try {
-      const { data } = await axiosClient.get('/problem/getAllProblem');
+      const { data } = await axiosClient.get('/problem'); // updated route
       setProblems(data);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch Problems Error:", err);
     }
   };
 
+  // Fetch solved problems for logged-in user
   const fetchSolvedProblems = async () => {
     try {
-      const { data } = await axiosClient.get("/problem/problemSolvedByUser");
+      const { data } = await axiosClient.get('/problem/solved'); // updated route
       setSolvedProblems(data);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch Solved Problems Error:", err);
     }
   };
 
@@ -40,16 +42,20 @@ function Homepage() {
     setSolvedProblems([]);
   };
 
+  // Fast lookup for solved problems
   const solvedSet = new Set(solvedProblems.map(p => p._id || p));
 
   const filteredProblems = problems.filter(problem => {
     const isSolved = solvedSet.has(problem._id.toString());
+
     const statusMatch =
       filters.status === "all" ||
       (filters.status === "solved" && isSolved) ||
       (filters.status === "unsolved" && !isSolved);
+
     const difficultyMatch = filters.difficulty === "all" || problem.difficulty === filters.difficulty;
     const tagMatch = filters.tag === "all" || problem.tags === filters.tag;
+
     return statusMatch && difficultyMatch && tagMatch;
   });
 
@@ -123,6 +129,7 @@ function Homepage() {
   );
 }
 
+// Helper function for difficulty badges
 const getDifficultyBadge = (difficulty) => {
   switch (difficulty) {
     case 'easy': return 'badge-success';
