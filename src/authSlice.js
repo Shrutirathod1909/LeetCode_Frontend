@@ -1,3 +1,4 @@
+// src/authSlice.js
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "./utils/axiosClient";
 
@@ -79,27 +80,35 @@ const authSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    // simple local logout (without API call)
+    logoutUser: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.error = null;
+      localStorage.removeItem("token");
+    },
+  },
   extraReducers: (builder) => {
     builder
-      // USER REGISTER
+      // REGISTER
       .addCase(registerUser.pending, (state) => { state.loading = true; state.error = null; })
-      .addCase(registerUser.fulfilled, (state, action) => { state.loading = false; state.isAuthenticated = !!action.payload; state.user = action.payload; })
+      .addCase(registerUser.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; state.isAuthenticated = !!action.payload; })
       .addCase(registerUser.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Something went wrong"; state.user = null; state.isAuthenticated = false; })
 
       // USER LOGIN
       .addCase(loginUserThunk.pending, (state) => { state.loading = true; state.error = null; })
-      .addCase(loginUserThunk.fulfilled, (state, action) => { state.loading = false; state.isAuthenticated = !!action.payload; state.user = action.payload; })
+      .addCase(loginUserThunk.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; state.isAuthenticated = !!action.payload; })
       .addCase(loginUserThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Something went wrong"; state.user = null; state.isAuthenticated = false; })
 
       // ADMIN LOGIN
       .addCase(loginAdminThunk.pending, (state) => { state.loading = true; state.error = null; })
-      .addCase(loginAdminThunk.fulfilled, (state, action) => { state.loading = false; state.isAuthenticated = !!action.payload; state.user = action.payload; })
+      .addCase(loginAdminThunk.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; state.isAuthenticated = !!action.payload; })
       .addCase(loginAdminThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Something went wrong"; state.user = null; state.isAuthenticated = false; })
 
       // CHECK AUTH
       .addCase(checkAuth.pending, (state) => { state.loading = true; state.error = null; })
-      .addCase(checkAuth.fulfilled, (state, action) => { state.loading = false; state.isAuthenticated = !!action.payload; state.user = action.payload; })
+      .addCase(checkAuth.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; state.isAuthenticated = !!action.payload; })
       .addCase(checkAuth.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Something went wrong"; state.user = null; state.isAuthenticated = false; })
 
       // LOGOUT
@@ -109,4 +118,8 @@ const authSlice = createSlice({
   },
 });
 
+// Export the simple logout action
+export const { logoutUser } = authSlice.actions;
+
+// Export reducer as default
 export default authSlice.reducer;
