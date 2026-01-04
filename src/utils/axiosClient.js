@@ -2,18 +2,18 @@ import axios from "axios";
 
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true,
+  withCredentials: true, // cookie send/receive साठी
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// ✅ ADD THIS PART
+// ✅ Interceptor to attach token from localStorage (header-based auth)
 axiosClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token"); // token from localStorage
 
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`; // attach to every request
   }
 
   return config;
