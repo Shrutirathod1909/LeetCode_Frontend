@@ -1,12 +1,13 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "./utils/axiosClient";
 
-// Register
+// ------------------ USER REGISTER ------------------
 export const registerUser = createAsyncThunk(
   "auth/register",
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axiosClient.post("/user/register", userData);
+      localStorage.setItem("token", response.data.token);
       return response.data.user;
     } catch (err) {
       return rejectWithValue(err.response?.data || { message: err.message });
@@ -14,7 +15,7 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// Login
+// ------------------ USER LOGIN ------------------
 export const loginUserThunk = createAsyncThunk(
   "auth/login",
   async (credentials, { rejectWithValue }) => {
@@ -28,7 +29,7 @@ export const loginUserThunk = createAsyncThunk(
   }
 );
 
-// Admin login
+// ------------------ ADMIN LOGIN ------------------
 export const loginAdminThunk = createAsyncThunk(
   "auth/adminLogin",
   async (credentials, { rejectWithValue }) => {
@@ -42,7 +43,7 @@ export const loginAdminThunk = createAsyncThunk(
   }
 );
 
-// Check auth
+// ------------------ CHECK AUTH ------------------
 export const checkAuth = createAsyncThunk(
   "auth/check",
   async (_, { rejectWithValue }) => {
@@ -55,7 +56,7 @@ export const checkAuth = createAsyncThunk(
   }
 );
 
-// Logout
+// ------------------ LOGOUT ------------------
 export const logoutUserThunk = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
@@ -69,6 +70,7 @@ export const logoutUserThunk = createAsyncThunk(
   }
 );
 
+// ------------------ SLICE ------------------
 const authSlice = createSlice({
   name: "auth",
   initialState: {
@@ -80,91 +82,30 @@ const authSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Register
-      .addCase(registerUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(registerUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isAuthenticated = !!action.payload;
-        state.user = action.payload;
-      })
-      .addCase(registerUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || "Something went wrong";
-        state.isAuthenticated = false;
-        state.user = null;
-      })
+      // USER REGISTER
+      .addCase(registerUser.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(registerUser.fulfilled, (state, action) => { state.loading = false; state.isAuthenticated = !!action.payload; state.user = action.payload; })
+      .addCase(registerUser.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Something went wrong"; state.user = null; state.isAuthenticated = false; })
 
-      // Login user
-      .addCase(loginUserThunk.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(loginUserThunk.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isAuthenticated = !!action.payload;
-        state.user = action.payload;
-      })
-      .addCase(loginUserThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || "Something went wrong";
-        state.isAuthenticated = false;
-        state.user = null;
-      })
+      // USER LOGIN
+      .addCase(loginUserThunk.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(loginUserThunk.fulfilled, (state, action) => { state.loading = false; state.isAuthenticated = !!action.payload; state.user = action.payload; })
+      .addCase(loginUserThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Something went wrong"; state.user = null; state.isAuthenticated = false; })
 
-      // Admin login
-      .addCase(loginAdminThunk.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(loginAdminThunk.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isAuthenticated = !!action.payload;
-        state.user = action.payload;
-      })
-      .addCase(loginAdminThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || "Something went wrong";
-        state.isAuthenticated = false;
-        state.user = null;
-      })
+      // ADMIN LOGIN
+      .addCase(loginAdminThunk.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(loginAdminThunk.fulfilled, (state, action) => { state.loading = false; state.isAuthenticated = !!action.payload; state.user = action.payload; })
+      .addCase(loginAdminThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Something went wrong"; state.user = null; state.isAuthenticated = false; })
 
-      // Check auth
-      .addCase(checkAuth.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(checkAuth.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isAuthenticated = !!action.payload;
-        state.user = action.payload;
-      })
-      .addCase(checkAuth.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || "Something went wrong";
-        state.isAuthenticated = false;
-        state.user = null;
-      })
+      // CHECK AUTH
+      .addCase(checkAuth.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(checkAuth.fulfilled, (state, action) => { state.loading = false; state.isAuthenticated = !!action.payload; state.user = action.payload; })
+      .addCase(checkAuth.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Something went wrong"; state.user = null; state.isAuthenticated = false; })
 
-      // Logout
-      .addCase(logoutUserThunk.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(logoutUserThunk.fulfilled, (state) => {
-        state.loading = false;
-        state.user = null;
-        state.isAuthenticated = false;
-        state.error = null;
-      })
-      .addCase(logoutUserThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || "Something went wrong";
-        state.isAuthenticated = false;
-        state.user = null;
-      });
+      // LOGOUT
+      .addCase(logoutUserThunk.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(logoutUserThunk.fulfilled, (state) => { state.loading = false; state.user = null; state.isAuthenticated = false; state.error = null; })
+      .addCase(logoutUserThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload?.message || "Something went wrong"; state.user = null; state.isAuthenticated = false; });
   },
 });
 
