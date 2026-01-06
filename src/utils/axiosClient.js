@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL + "/api", // ✅ FIX HERE
+  baseURL: import.meta.env.VITE_API_URL, // ✅ FIX HERE
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
