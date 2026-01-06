@@ -2,7 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, NavLink } from "react-router";
+import { useNavigate, NavLink } from "react-router-dom";
+
 import { loginUserThunk } from "../authSlice"; // ✅ use the correct thunk
 import { useEffect, useState } from "react";
 
