@@ -75,17 +75,26 @@ function AdminPanel() {
     useFieldArray({ control, name: "hiddenTestCases" });
 
   /* ---------------- SUBMIT ---------------- */
- const onSubmit = async (data) => {
+const onSubmit = async (data) => {
   try {
     const payload = {
       ...data,
-      tags: [data.tags] // ✅ FIX
+      tags: [data.tags],
     };
 
-    await axiosClient.post("/problem/admin/create", payload);
+    console.log("Sending payload:", payload);
+
+    const res = await axiosClient.post(
+      "/problem/admin/create",
+      payload
+    );
+
+    console.log("Response:", res.data);
+
     alert("Problem created successfully ✅");
     navigate("/");
   } catch (err) {
+    console.error(err);
     alert(err.response?.data?.message || "Problem create failed ❌");
   }
 };
