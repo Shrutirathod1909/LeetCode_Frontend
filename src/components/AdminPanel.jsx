@@ -2,14 +2,17 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import axiosClient from "../utils/axiosClient";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 
 /* ---------------- ZOD SCHEMA ---------------- */
 const problemSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
+  title: z.string().min(1),
+  description: z.string().min(1),
   difficulty: z.enum(["easy", "medium", "hard"]),
-  tags: z.enum(["array", "linkedList", "graph", "dp"]),
+
+  tags: z.array(
+    z.enum(["array", "linkedList", "graph", "dp"])
+  ).min(1),
 
   visibleTestCases: z.array(
     z.object({
@@ -41,6 +44,7 @@ const problemSchema = z.object({
   ).length(3)
 });
 
+
 /* ---------------- COMPONENT ---------------- */
 function AdminPanel() {
   const navigate = useNavigate();
@@ -51,22 +55,24 @@ function AdminPanel() {
     handleSubmit,
     formState: { errors }
   } = useForm({
-    resolver: zodResolver(problemSchema),
-    defaultValues: {
-      startCode: [
-        { language: "cpp", initialCode: "" },
-        { language: "java", initialCode: "" },
-        { language: "javascript", initialCode: "" }
-      ],
-      referenceSolution: [
-        { language: "cpp", completeCode: "" },
-        { language: "java", completeCode: "" },
-        { language: "javascript", completeCode: "" }
-      ],
-      visibleTestCases: [{ input: "", output: "", explanation: "" }],
-      hiddenTestCases: [{ input: "", output: "" }]
-    }
-  });
+  resolver: zodResolver(problemSchema),
+  defaultValues: {
+    tags: ["array"],   // ✅ REQUIRED
+    startCode: [
+      { language: "cpp", initialCode: "" },
+      { language: "java", initialCode: "" },
+      { language: "javascript", initialCode: "" }
+    ],
+    referenceSolution: [
+      { language: "cpp", completeCode: "" },
+      { language: "java", completeCode: "" },
+      { language: "javascript", completeCode: "" }
+    ],
+    visibleTestCases: [{ input: "", output: "", explanation: "" }],
+    hiddenTestCases: [{ input: "", output: "" }]
+  }
+});
+
 
   const { fields: visibleFields, append: addVisible, remove: removeVisible } =
     useFieldArray({ control, name: "visibleTestCases" });
@@ -77,27 +83,14 @@ function AdminPanel() {
   /* ---------------- SUBMIT ---------------- */
 const onSubmit = async (data) => {
   try {
-    const payload = {
-      ...data,
-      tags: [data.tags],
-    };
-
-    console.log("Sending payload:", payload);
-
-    const res = await axiosClient.post(
-      "/problem/admin/create",
-      payload
-    );
-
-    console.log("Response:", res.data);
-
+    await axiosClient.post("/problem/admin/create", data);
     alert("Problem created successfully ✅");
     navigate("/");
   } catch (err) {
-    console.error(err);
     alert(err.response?.data?.message || "Problem create failed ❌");
   }
 };
+
 
 
   /* ---------------- UI ---------------- */
@@ -119,7 +112,7 @@ const onSubmit = async (data) => {
               <option value="hard">Hard</option>
             </select>
 
-            <select {...register("tags")} className="select select-bordered w-1/2">
+<select {...register("tags.0")} className="select select-bordered w-1/2">
               <option value="array">Array</option>
               <option value="linkedList">Linked List</option>
               <option value="graph">Graph</option>
@@ -131,8 +124,8 @@ const onSubmit = async (data) => {
         {/* VISIBLE TEST CASES */}
         <div className="card bg-base-100 shadow p-6">
           <h2 className="font-semibold mb-2">Visible Test Cases</h2>
-          {visibleFields.map((_, i) => (
-            <div key={i} className="space-y-2">
+          {visibleFields.map((field, i) => (
+  <div key={field.id} className="space-y-2">
               <input {...register(`visibleTestCases.${i}.input`)} placeholder="Input" className="input input-bordered w-full" />
               <input {...register(`visibleTestCases.${i}.output`)} placeholder="Output" className="input input-bordered w-full" />
               <textarea {...register(`visibleTestCases.${i}.explanation`)} placeholder="Explanation" className="textarea textarea-bordered w-full" />
@@ -147,8 +140,9 @@ const onSubmit = async (data) => {
         {/* HIDDEN TEST CASES */}
         <div className="card bg-base-100 shadow p-6">
           <h2 className="font-semibold mb-2">Hidden Test Cases</h2>
-          {hiddenFields.map((_, i) => (
-            <div key={i} className="space-y-2">
+         {hiddenFields.map((field, i) => (
+  <div key={field.id} className="space-y-2">
+
               <input {...register(`hiddenTestCases.${i}.input`)} placeholder="Input" className="input input-bordered w-full" />
               <input {...register(`hiddenTestCases.${i}.output`)} placeholder="Output" className="input input-bordered w-full" />
               <button type="button" onClick={() => removeHidden(i)} className="btn btn-xs btn-error">Remove</button>

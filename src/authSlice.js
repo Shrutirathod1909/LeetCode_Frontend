@@ -1,4 +1,3 @@
-// src/authSlice.js
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "./utils/axiosClient";
 
@@ -8,7 +7,7 @@ export const registerUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const res = await axiosClient.post("/user/register", userData);
-      return res.data; // { token, user }
+      return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Register failed");
     }
@@ -21,7 +20,7 @@ export const loginUserThunk = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const res = await axiosClient.post("/user/login", credentials);
-      return res.data; // { token, user }
+      return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Login failed");
     }
@@ -34,7 +33,7 @@ export const loginAdminThunk = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const res = await axiosClient.post("/user/admin/login", credentials);
-      return res.data; // { token, admin }
+      return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Admin login failed");
     }
@@ -48,40 +47,33 @@ export const checkAuth = createAsyncThunk(
     try {
       const res = await axiosClient.get("/user/check");
       return res.data.user;
-    } catch (err) {
+    } catch {
       return rejectWithValue("Not authenticated");
     }
   }
 );
 
 /* ---------------- LOGOUT ---------------- */
-export const logoutUserThunk = createAsyncThunk(
-  "auth/logout",
-  async () => {
-    await axiosClient.post("/user/logout");
-    localStorage.removeItem("token");
-    return null;
-  }
-);
+export const logoutUserThunk = createAsyncThunk("auth/logout", async () => {
+  await axiosClient.post("/user/logout");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  return null;
+});
 
 /* ---------------- SLICE ---------------- */
+const token = localStorage.getItem("token");
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
     user: null,
-    isAuthenticated: false,
+    isAuthenticated: !!token,
     loading: false,
     error: null,
   },
 
-  reducers: {
-    logoutUser: (state) => {
-      state.user = null;
-      state.isAuthenticated = false;
-      state.error = null;
-      localStorage.removeItem("token");
-    },
-  },
+  reducers: {},
 
   extraReducers: (builder) => {
     builder
@@ -94,6 +86,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
+        state.error = null;
         localStorage.setItem("token", action.payload.token);
       })
       .addCase(registerUser.rejected, (state, action) => {
@@ -109,6 +102,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
+        state.error = null;
         localStorage.setItem("token", action.payload.token);
       })
       .addCase(loginUserThunk.rejected, (state, action) => {
@@ -117,41 +111,40 @@ const authSlice = createSlice({
       })
 
       /* ADMIN LOGIN */
-      .addCase(loginAdminThunk.pending, (state) => {
-        state.loading = true;
-      })
       .addCase(loginAdminThunk.fulfilled, (state, action) => {
         state.loading = false;
         state.user = { ...action.payload.admin, role: "admin" };
         state.isAuthenticated = true;
+        state.error = null;
         localStorage.setItem("token", action.payload.token);
-      })
-      .addCase(loginAdminThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
       })
 
       /* CHECK AUTH */
+      .addCase(checkAuth.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(checkAuth.fulfilled, (state, action) => {
-        state.user = action.payload;
-        state.isAuthenticated = true;
         state.loading = false;
+        state.user = {
+          ...action.payload,
+          role: action.payload.role || "user",
+        };
+        state.isAuthenticated = true;
+        state.error = null;
       })
       .addCase(checkAuth.rejected, (state) => {
         state.loading = false;
-        if (!localStorage.getItem("token")) {
-          state.user = null;
-          state.isAuthenticated = false;
-        }
+        state.user = null;
+        state.isAuthenticated = false;
       })
 
       /* LOGOUT */
       .addCase(logoutUserThunk.fulfilled, (state) => {
         state.user = null;
         state.isAuthenticated = false;
+        state.error = null;
       });
   },
 });
 
-export const { logoutUser } = authSlice.actions;
 export default authSlice.reducer;
