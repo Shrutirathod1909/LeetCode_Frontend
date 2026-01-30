@@ -12,6 +12,7 @@ const SubmissionHistory = ({ problemId }) => {
       try {
         setLoading(true);
         const response = await axiosClient.get(`/problem/submittedProblem/${problemId}`);
+        console.log("submission response", response);
         setSubmissions(response.data);
         setError(null);
       } catch (err) {
@@ -65,11 +66,12 @@ const SubmissionHistory = ({ problemId }) => {
     );
   }
 
+  console.log("submissions", submissions);
   return (
     <div className="container mx-auto p-4">
       <h2 className="text-2xl font-bold mb-6 text-center">Submission History</h2>
       
-      {submissions.length === 0 ? (
+      {submissions.length=== 0 ? (
         <div className="alert alert-info shadow-lg">
           <div>
             <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -95,7 +97,9 @@ const SubmissionHistory = ({ problemId }) => {
                 </tr>
               </thead>
               <tbody>
-                {submissions.map((sub, index) => (
+                {
+                
+               submissions.length>0 && submissions.map((sub, index) => (
                   <tr key={sub._id}>
                     <td>{index + 1}</td>
                     <td className="font-mono">{sub.language}</td>
