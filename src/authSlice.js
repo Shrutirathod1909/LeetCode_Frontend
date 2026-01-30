@@ -1,150 +1,139 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axiosClient from "./utils/axiosClient";
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import axiosClient from './utils/axiosClient'
 
-/* ---------------- REGISTER ---------------- */
 export const registerUser = createAsyncThunk(
-  "auth/register",
+  'auth/register',
   async (userData, { rejectWithValue }) => {
     try {
-      const res = await axiosClient.post("/user/register", userData);
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Register failed");
+    const response =  await axiosClient.post('/user/register', userData);
+    return response.data.user;
+    } catch (error) {
+      return rejectWithValue(error);
     }
   }
 );
 
-/* ---------------- USER LOGIN ---------------- */
-export const loginUserThunk = createAsyncThunk(
-  "auth/login",
+
+export const loginUser = createAsyncThunk(
+  'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const res = await axiosClient.post("/user/login", credentials);
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Login failed");
+      const response = await axiosClient.post('/user/login', credentials);
+      return response.data.user;
+    } catch (error) {
+      return rejectWithValue(error);
     }
   }
 );
 
-/* ---------------- ADMIN LOGIN ---------------- */
-export const loginAdminThunk = createAsyncThunk(
-  "auth/adminLogin",
-  async (credentials, { rejectWithValue }) => {
-    try {
-      const res = await axiosClient.post("/user/admin/login", credentials);
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Admin login failed");
-    }
-  }
-);
-
-/* ---------------- CHECK AUTH ---------------- */
 export const checkAuth = createAsyncThunk(
-  "auth/check",
+  'auth/check',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axiosClient.get("/user/check");
-      return res.data.user;
-    } catch {
-      return rejectWithValue("Not authenticated");
+      const { data } = await axiosClient.get('/user/check');
+      return data.user;
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return rejectWithValue(null); // Special case for no session
+      }
+      return rejectWithValue(error);
     }
   }
 );
 
-/* ---------------- LOGOUT ---------------- */
-export const logoutUserThunk = createAsyncThunk("auth/logout", async () => {
-  await axiosClient.post("/user/logout");
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  return null;
-});
-
-/* ---------------- SLICE ---------------- */
-const token = localStorage.getItem("token");
+export const logoutUser = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      await axiosClient.post('/user/logout');
+      return null;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
 
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState: {
     user: null,
-    isAuthenticated: !!token,
+    isAuthenticated: false,
     loading: false,
-    error: null,
+    error: null
   },
-
-  reducers: {},
-
+  reducers: {
+  },
   extraReducers: (builder) => {
     builder
-
-      /* REGISTER */
+      // Register User Cases
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.isAuthenticated = true;
-        state.error = null;
-        localStorage.setItem("token", action.payload.token);
+        state.isAuthenticated = !!action.payload;
+        state.user = action.payload;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.message || 'Something went wrong';
+        state.isAuthenticated = false;
+        state.user = null;
       })
-
-      /* USER LOGIN */
-      .addCase(loginUserThunk.pending, (state) => {
+  
+      // Login User Cases
+      .addCase(loginUser.pending, (state) => {
         state.loading = true;
-      })
-      .addCase(loginUserThunk.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user;
-        state.isAuthenticated = true;
         state.error = null;
-        localStorage.setItem("token", action.payload.token);
       })
-      .addCase(loginUserThunk.rejected, (state, action) => {
+      .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.isAuthenticated = !!action.payload;
+        state.user = action.payload;
       })
-
-      /* ADMIN LOGIN */
-      .addCase(loginAdminThunk.fulfilled, (state, action) => {
+      .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.user = { ...action.payload.admin, role: "admin" };
-        state.isAuthenticated = true;
-        state.error = null;
-        localStorage.setItem("token", action.payload.token);
+        state.error = action.payload?.message || 'Something went wrong';
+        state.isAuthenticated = false;
+        state.user = null;
       })
-
-      /* CHECK AUTH */
+  
+      // Check Auth Cases
       .addCase(checkAuth.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = {
-          ...action.payload,
-          role: action.payload.role || "user",
-        };
-        state.isAuthenticated = true;
+        state.isAuthenticated = !!action.payload;
+        state.user = action.payload;
+      })
+      .addCase(checkAuth.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || 'Something went wrong';
+        state.isAuthenticated = false;
+        state.user = null;
+      })
+  
+      // Logout User Cases
+      .addCase(logoutUser.pending, (state) => {
+        state.loading = true;
         state.error = null;
       })
-      .addCase(checkAuth.rejected, (state) => {
+      .addCase(logoutUser.fulfilled, (state) => {
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
-      })
-
-      /* LOGOUT */
-      .addCase(logoutUserThunk.fulfilled, (state) => {
-        state.user = null;
-        state.isAuthenticated = false;
         state.error = null;
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || 'Something went wrong';
+        state.isAuthenticated = false;
+        state.user = null;
       });
-  },
+  }
 });
 
 export default authSlice.reducer;
