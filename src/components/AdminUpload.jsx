@@ -197,9 +197,6 @@ function AdminUpload(){
             </div>
           </div>
         </div>
-
-
-
     );
 }
 
